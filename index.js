@@ -28,6 +28,8 @@ client.on('messageCreate', async (message) => {
     return null
   }
 
+  console.log(`User ${message.author.username} message: ${message.content}`)
+
   const conversation = [
     {
       role: 'system',
@@ -47,7 +49,13 @@ client.on('messageCreate', async (message) => {
     messages: conversation,
   })
 
-  message.reply(result.data.choices[0].message)
+  const chatGPTResponse = result.data.choices[0].message
+
+  console.log(
+    `ChatGPT Response to ${message.author.username}: ${chatGPTResponse}`
+  )
+
+  message.reply(chatGPTResponse)
 })
 
 client.login(process.env.TOKEN)
