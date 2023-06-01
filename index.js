@@ -52,7 +52,11 @@ client.on('messageCreate', async (message) => {
   const chatGPTResponse = result.data.choices[0].message
 
   console.log(
-    `ChatGPT Response to ${message.author.username}: ${chatGPTResponse}`
+    `ChatGPT Response to ${message.author.username}: ${JSON.stringify(
+      chatGPTResponse,
+      null,
+      4
+    )}`
   )
 
   message.reply(chatGPTResponse)
