@@ -1,6 +1,6 @@
 require('dotenv/config')
-const { Client, IntentsBitField } = require('discord.js')
-const { Configuration, OpenAIApi } = require('openai')
+const { Client, IntentsBitField, ChannelType } = require('discord.js')
+const { getReply } = require('./lib/chatgptapi')
 
 const client = new Client({
   intents: [
@@ -9,12 +9,6 @@ const client = new Client({
     IntentsBitField.Flags.MessageContent,
   ],
 })
-
-const openaiConfig = new Configuration({
-  apiKey: process.env.API_KEY,
-})
-
-const openai = new OpenAIApi(openaiConfig)
 
 client.on('ready', () => {
   console.log('The bot is online and running')
@@ -28,38 +22,31 @@ client.on('messageCreate', async (message) => {
     return null
   }
 
-  console.log(`User ${message.author.username} message: ${message.content}`)
-
-  const conversation = [
-    {
-      role: 'system',
-      content: 'You are a friendly chatbot that speaks Brazilian Portuguese.',
-    },
-  ]
-
-  conversation.push({
-    role: 'user',
-    content: message.content,
-  })
-
   await message.channel.sendTyping()
-
-  const result = await openai.createChatCompletion({
-    model: 'gpt-3.5-turbo',
-    messages: conversation,
-  })
-
-  const chatGPTResponse = result.data.choices[0].message
-
-  console.log(
-    `ChatGPT Response to ${message.author.username}: ${JSON.stringify(
-      chatGPTResponse,
-      null,
-      4
-    )}`
-  )
+  const chatGPTResponse = await getReply([message.content])
 
   message.reply(chatGPTResponse)
+})
+
+client.on('threadCreate', async (thread) => {
+  if (!thread.parent.type === ChannelType.GuildForum) {
+    return null
+  }
+  if (thread.parent.parentId === process.env.IGNORE_ID) {
+    return null
+  }
+  const threadFirstMessage = await thread.fetchStarterMessage()
+
+  await thread.sendTyping()
+  const chatGPTResponse = await getReply([
+    thread.name,
+    threadFirstMessage.content,
+  ])
+  thread.send(chatGPTResponse)
+  thread.send(
+    'Sou uma IA então minha resposta pode conter erros, mas caso tenha sido util por favor reaja para que outros possam ver ela mais facilmente. Caso precise de mais ajuda basta me marcar em uma nova mensagem'
+  )
+  thread.send(`<@&1115007002364612649> podem dar uma olhadinha aqui?`)
 })
 
 client.login(process.env.TOKEN)
